@@ -1,0 +1,34 @@
+    1  aws configure get region
+    2  aws cloudformation create-stack --stack-name CreateBucket --template-body file://S3.yaml
+    3  wget https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/ILT-TF-200-ACACAD-20-EN/mod10-challenge/static-website.zip
+    4  unzip static-website.zip -d static
+    5  cd static
+    6  aws s3 cp --recursive . s3://createbucket-s3bucket-10blmat1c9bp9/ --acl public-read
+    7  clear
+    8  cd ..
+    9  aws cloudformation validate-template --template-body file://S3.yaml
+   10  aws cloudformation update-stack --stack-name CreateBucket --template-body file://S3.yaml
+   11  git clone https://git-codecommit.us-east-1.amazonaws.com/v1/repos/CFTemplatesRepo
+   12  cd CFTemplatesRepo
+   13  git status 
+   14  git add templates/cafe-network.yaml
+   15  git commit -m 'initial commit of network template' templates/cafe-network.yaml
+   16  git status 
+   17  git push 
+   18  git commit -m "Add new output section" templates/cafe-network.yaml 
+   19  git push 
+   20  git add templates/cafe-app.yaml 
+   21  git commit -m "Add ec2 template"
+   22  git push 
+   23  aws cloudformation validate-template --template-body file:///home/ec2-user/environment/CFTemplatesRepo/templates/cafe-app.yaml
+   24  cd ..
+   25  aws cloudformation create-stack --stack-name update-cafe-network --template-body file:///home/ec2-user/environment/CFTemplatesRepo/templates/cafe-network.yaml --region us-west-2
+   26  clear 
+   27* aws s3 cp templates/cafe-app.yaml s3://
+   28  cd CFTemplatesRepo/
+   29  aws s3 cp templates/cafe-app.yaml  s3://c41040a530424l1423511t1w635697176697-repobucket-1q92wkphuwf9s/
+   30  cd ~/
+   31  history 
+   32  histiry command.txt
+   33  histiry > command.txt
+   34  history > commands.txt

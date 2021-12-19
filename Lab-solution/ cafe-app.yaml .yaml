@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Cafe application
+
+Parameters:
+
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+
+  CafeNetworkParameter:
+    Type: String
+    Default: update-cafe-network
+
+  InstanceTypeParameter:
+    Type: String
+    Default: t2.small
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t3.micro
+      - t3.small
+    Description: Enter t2.micro, t2.small, t3.micro, or t3.small. Default is t2.small.
+
+Mappings:
+
+  RegionMap:
+    us-east-1:
+      "keypair": "vockey"
+    us-west-2:
+      "keypair": "cafe-oregon"
+
+Resources:
+
+  CafeInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceTypeParameter
+      KeyName: !FindInMap [RegionMap, !Ref "AWS::Region", keypair]
+      IamInstanceProfile: CafeRole
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          AssociatePublicIpAddress: 'true'
+          SubnetId: !ImportValue
+            'Fn::Sub': '${CafeNetworkParameter}-SubnetID'
+          GroupSet:
+            - !Ref CafeSG
+      Tags:
+        - Key: Name
+          Value: Cafe Web Server
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            yum -y update
+            yum install -y mariadb-server httpd wget
+            amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
+            systemctl enable httpd
+            systemctl start httpd
+            systemctl enable mariadb
+            systemctl start mariadb
+            wget https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/ILT-TF-200-ACACAD-20-EN/mod10-challenge/cafe-app.sh
+            chmod +x cafe-app.sh
+            ./cafe-app.sh
+
+  CafeSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH, HTTP access
+      VpcId: !ImportValue
+        'Fn::Sub': '${CafeNetworkParameter}-VpcID'
+      Tags:
+        - Key: Name
+          Value: CafeSG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  WebServerPublicIP:
+    Value: !GetAtt 'CafeInstance.PublicIp'
